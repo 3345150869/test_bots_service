@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.io 设备管理系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #2c3e50;
+        }
+        
+        /* 登录区域 */
+        .login-section {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .login-section h2 {
+            margin-bottom: 20px;
+            color: #34495e;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        .btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-primary {
+            background-color: #3498db;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        /* 设备管理区域 */
+        .device-section {
+            display: none;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+        
+        .device-section h2 {
+            margin-bottom: 20px;
+            color: #34495e;
+        }
+        
+        .device-list {
+            margin-bottom: 30px;
+        }
+        
+        .device-list h3 {
+            margin-bottom: 15px;
+            color: #7f8c8d;
+        }
+        
+        .device-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .device-item {
+            background-color: #ecf0f1;
+            padding: 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .device-item:hover {
+            background-color: #bdc3c7;
+        }
+        
+        .device-item.selected {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .command-section {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+        
+        .command-section h2 {
+            margin-bottom: 20px;
+            color: #34495e;
+        }
+        
+        .command-form {
+            max-width: 600px;
+        }
+        
+        .command-form select,
+        .command-form textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .command-form textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        
+        /* 日志区域 */
+        .log-section {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .log-section h2 {
+            margin-bottom: 20px;
+            color: #34495e;
+        }
+        
+        #log {
+            height: 300px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            overflow-y: auto;
+            font-family: monospace;
+            background-color: #fafafa;
+            font-size: 14px;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .log-time {
+            color: #7f8c8d;
+            margin-right: 10px;
+        }
+        
+        .log-info {
+            color: #27ae60;
+        }
+        
+        .log-error {
+            color: #e74c3c;
+        }
+        
+        .log-message {
+            color: #34495e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Socket.io 设备管理系统</h1>
+        
+        <!-- 登录区域 -->
+        <div class="login-section" id="loginSection">
+            <h2>用户登录</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <input type="text" id="username" name="username" placeholder="请输入用户名" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" name="password" placeholder="请输入密码" required>
+                </div>
+                <button type="submit" class="btn btn-primary">登录</button>
+            </form>
+        </div>
+        
+        <!-- 设备管理区域 -->
+        <div class="device-section" id="deviceSection">
+            <h2>设备管理</h2>
+            <div class="device-list">
+                <h3>设备列表</h3>
+                <div class="device-items" id="deviceItems">
+                    <!-- 设备项将通过JavaScript动态添加 -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- 命令发送区域 -->
+        <div class="command-section" id="commandSection">
+            <h2>发送命令</h2>
+            <form id="commandForm">
+                <div class="form-group">
+                    <label for="deviceSelect">选择设备</label>
+                    <select id="deviceSelect" required>
+                        <option value="">请选择设备</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="commandSelect">选择命令</label>
+                    <select id="commandSelect" required>
+                        <option value="">请选择命令</option>
+                        <option value="turn_on">打开设备</option>
+                        <option value="turn_off">关闭设备</option>
+                        <option value="get_status">获取状态</option>
+                        <option value="set_config">设置配置</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="commandParams">命令参数 (JSON格式)</label>
+                    <textarea id="commandParams" placeholder='例如: {"brightness": 80}' required>{}&#10;</textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">发送命令</button>
+            </form>
+        </div>
+        
+        <!-- 日志区域 -->
+        <div class="log-section">
+            <h2>系统日志</h2>
+            <div id="log"></div>
+        </div>
+    </div>
+    
+    <!-- Socket.io 客户端 -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        // 初始化Socket.io连接
+        const socket = io('http://localhost:3001', {
+            transports: ['websocket'],
+            timeout: 5000
+        });
+        
+        let currentUser = null;
+        let selectedDevice = null;
+        
+        // DOM元素
+        const loginSection = document.getElementById('loginSection');
+        const deviceSection = document.getElementById('deviceSection');
+        const commandSection = document.getElementById('commandSection');
+        const loginForm = document.getElementById('loginForm');
+        const commandForm = document.getElementById('commandForm');
+        const deviceItems = document.getElementById('deviceItems');
+        const deviceSelect = document.getElementById('deviceSelect');
+        const logContainer = document.getElementById('log');
+        
+        // 添加日志
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleString();
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = `
+                <span class="log-time">${timestamp}</span>
+                <span class="log-${type}">[${type.toUpperCase()}]</span>
+                <span class="log-message">${message}</span>
+            `;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        // Socket.io事件处理
+        socket.on('connect', () => {
+            addLog(`WebSocket连接成功: ${socket.id}`, 'info');
+        });
+        
+        socket.on('disconnect', () => {
+            addLog('WebSocket连接断开', 'error');
+        });
+        
+        socket.on('sys:message', (data) => {
+            addLog(data.message, data.type === 'error' ? 'error' : 'info');
+        });
+        
+        socket.on('web:login_result', (data) => {
+            if (data.success) {
+                addLog('登录成功', 'info');
+                currentUser = data.user;
+                loginSection.style.display = 'none';
+                deviceSection.style.display = 'block';
+                commandSection.style.display = 'block';
+            } else {
+                addLog(`登录失败: ${data.message}`, 'error');
+            }
+        });
+        
+        socket.on('sys:device_list', (data) => {
+            addLog(`获取设备列表成功，共 ${data.count} 台设备`, 'info');
+            updateDeviceList(data.devices);
+        });
+        
+        socket.on('web:cmd_result', (data) => {
+            if (data.success) {
+                addLog(data.message, 'info');
+            } else {
+                addLog(`命令发送失败: ${data.message}`, 'error');
+            }
+        });
+        
+        socket.on('web:device_cmd_result', (data) => {
+            if (data.success) {
+                addLog(`设备 ${data.deviceId} 响应成功: ${data.message}`, 'info');
+                if (data.result) {
+                    addLog(`响应数据: ${JSON.stringify(data.result)}`, 'info');
+                }
+            } else {
+                addLog(`设备 ${data.deviceId} 响应失败: ${data.message}`, 'error');
+            }
+        });
+        
+        // 更新设备列表
+        function updateDeviceList(devices) {
+            // 清空现有设备
+            deviceItems.innerHTML = '';
+            deviceSelect.innerHTML = '<option value="">请选择设备</option>';
+            
+            // 添加新设备
+            devices.forEach(deviceId => {
+                // 添加到设备列表
+                const deviceItem = document.createElement('div');
+                deviceItem.className = 'device-item';
+                deviceItem.dataset.deviceId = deviceId;
+                deviceItem.innerHTML = `
+                    <div><strong>设备ID:</strong> ${deviceId}</div>
+                    <div><strong>状态:</strong> 在线</div>
+                `;
+                deviceItem.addEventListener('click', () => {
+                    selectDevice(deviceId);
+                });
+                deviceItems.appendChild(deviceItem);
+                
+                // 添加到下拉选择框
+                const option = document.createElement('option');
+                option.value = deviceId;
+                option.textContent = deviceId;
+                deviceSelect.appendChild(option);
+            });
+        }
+        
+        // 选择设备
+        function selectDevice(deviceId) {
+            selectedDevice = deviceId;
+            
+            // 更新设备项样式
+            document.querySelectorAll('.device-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            document.querySelector(`[data-device-id="${deviceId}"]`).classList.add('selected');
+            
+            // 更新下拉选择框
+            deviceSelect.value = deviceId;
+        }
+        
+        // 登录表单提交
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            socket.emit('web:login', { username, password });
+        });
+        
+        // 命令表单提交
+        commandForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const deviceId = deviceSelect.value;
+            const command = commandSelect.value;
+            const paramsText = document.getElementById('commandParams').value;
+            
+            try {
+                const params = JSON.parse(paramsText);
+                socket.emit('web:device_cmd', { deviceId, command, params });
+            } catch (error) {
+                addLog('参数格式错误，请输入有效的JSON格式', 'error');
+            }
+        });
+        
+        // 心跳检测
+        setInterval(() => {
+            socket.emit('ping');
+        }, 30000);
+        
+        socket.on('pong', () => {
+            addLog('心跳检测: 连接正常', 'info');
+        });
+    </script>
+</body>
+</html>
